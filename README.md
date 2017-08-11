@@ -1,5 +1,7 @@
 # alarm-clock
 
+## [Demo](https://jsfeb26.github.io/alarm-clock/)
+
 ### Todo
 * Add ability to customize snooze duration time
 * Add ability to set multiple alarms
