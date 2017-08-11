@@ -1,0 +1,156 @@
+.alarm-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  height: 100%;
+  width: 100%;
+}
+
+.alarm-body {
+  border: 5px outset #9498a1;
+  position: relative;
+  padding: 0 20px;
+  width: 500px;
+  background-color: #c4c7ce;
+}
+
+.alarm-alert { animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both infinite;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+@keyframes shake {
+  10%, 90% {
+    transform: translate3d(-1px, 0, 0);
+  }
+
+  20%, 80% {
+    transform: translate3d(2px, 0, 0);
+  }
+
+  30%, 50%, 70% {
+    transform: translate3d(-4px, 0, 0);
+  }
+
+  40%, 60% {
+    transform: translate3d(4px, 0, 0);
+  }
+}
+
+.time-display-wrapper {
+  border: 5px inset #AAAAAA;
+}
+
+.time-display {
+  display: flex;
+  height: 100px;
+  justify-content: center;
+  align-items: center;
+  color: #111111;
+}
+
+.time {
+  font-size: 80px;
+  letter-spacing: 40px;
+}
+
+.period {
+  font-size: 32px;
+}
+
+.btn {
+  padding: 5px 15px;
+  font-size: 18px;
+  text-align: center;
+  cursor: pointer;
+  outline: none;
+  color: #fff;
+  background-color: #0074D9;
+  border: none;
+  border-radius: 5px;
+  box-shadow: 0 4px #999;
+  width: 50px;
+}
+
+.btn:active {
+  box-shadow: 0 0px;
+  transform: translateY(4px);
+}
+
+.snooze {
+  width: 50%;
+  margin: auto;
+}
+
+.alarm-buttons {
+  display: flex;
+  padding: 30px;
+  justify-content: space-between;
+}
+
+.alarm-toggle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+  margin: 0 5px;
+}
+
+.switch input {display:none;}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #AAAAAA;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #0074D9;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .slider:before {
+  transform: translateX(26px);
+}
+
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+.setting-alarm {
+  animation: blinker 1s linear infinite;
+}
+
+@keyframes blinker {
+  50% { opacity: 0; }
+}

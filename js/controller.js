@@ -1,263 +1,130 @@
 (function (window) {
-	'use strict';
+  'use strict';
 
-	/**
-	 * Takes a model and view and acts as the controller between them
-	 *
-	 * @constructor
-	 * @param {object} model The model instance
-	 * @param {object} view The view instance
-	 */
-	function Controller(model, view) {
-		var self = this;
-		self.model = model;
-		self.view = view;
+  const SNOOZE_TIME_MINUTES = 1;
 
-		self.view.bind('newTodo', function (title) {
-			self.addItem(title);
-		});
+  function Controller(model, view) {
+    const self = this;
+    self.model = model;
+    self.view = view;
+    self.snoozeFunc = null;
+    self.state = {
+      time: null,
+      period: null,
+      isAlarmAlert: null,
+      isSetAlarm: null,
+      isAlarmOn: null
+    };
 
-		self.view.bind('itemEdit', function (item) {
-			self.editItem(item.id);
-		});
+    self.view.bind('incrementTime', function () {
+      self.incrementTime();
+    });
 
-		self.view.bind('itemEditDone', function (item) {
-			self.editItemSave(item.id, item.title);
-		});
+    self.view.bind('decrementTime', function () {
+      self.decrementTime();
+    });
 
-		self.view.bind('itemEditCancel', function (item) {
-			self.editItemCancel(item.id);
-		});
+    self.view.bind('setAlarm', function () {
+      self.setAlarm();
+    });
 
-		self.view.bind('itemRemove', function (item) {
-			self.removeItem(item.id);
-		});
+    self.view.bind('toggleAlarm', function () {
+      self.toggleAlarm();
+    });
 
-		self.view.bind('itemToggle', function (item) {
-			self.toggleComplete(item.id, item.completed);
-		});
-
-		self.view.bind('removeCompleted', function () {
-			self.removeCompletedItems();
-		});
-
-		self.view.bind('toggleAll', function (status) {
-			self.toggleAll(status.completed);
-		});
-	}
-
-  Controller.prototype.render = function () {
-    this.view.render('setFilter', currentPage);
+    self.view.bind('snoozeAlarm', function () {
+      self.snoozeAlarm();
+    });
   };
 
-	/**
-	 * An event to fire on load. Will get all items and display them in the
-	 * todo-list
-	 */
-	Controller.prototype.showAll = function () {
-		var self = this;
-		self.model.read(function (data) {
-			self.view.render('showEntries', data);
-		});
-	};
+  Controller.prototype.init = function () {
+    const self = this;
+    self.render();
 
-	/**
-	 * Renders all active tasks
-	 */
-	Controller.prototype.showActive = function () {
-		var self = this;
-		self.model.read({ completed: false }, function (data) {
-			self.view.render('showEntries', data);
-		});
-	};
+    setInterval(() => {
+      self.model.incrementTime('time'); // always increment time
+      self.render();
+    }, 60000);
+  };
 
-	/**
-	 * Renders all completed tasks
-	 */
-	Controller.prototype.showCompleted = function () {
-		var self = this;
-		self.model.read({ completed: true }, function (data) {
-			self.view.render('showEntries', data);
-		});
-	};
+  Controller.prototype.render = function () {
+    const self = this;
 
-	/**
-	 * An event to fire whenever you want to add an item. Simply pass in the event
-	 * object and it'll handle the DOM insertion and saving of the new item.
-	 */
-	Controller.prototype.addItem = function (title) {
-		var self = this;
+    const state = self.state;
+    const newState = self.model.getState();
 
-		if (title.trim() === '') {
-			return;
-		}
+    // only re-render if state has changed
+    if (newState.time !== state.time || newState.period !== state.period) {
+      state.time = newState.time;
+      state.time = newState.period;
+      self.view.render('setTime', { time: newState.time, period: newState.period });
+    }
 
-		self.model.create(title, function () {
-			self.view.render('clearNewTodo');
-			self._filter(true);
-		});
-	};
+    if (newState.isAlarmAlert !== state.isAlarmAlert) {
+      state.isAlarmAlert = newState.isAlarmAlert;
+      self.view.render('setIsAlarmAlert', { isAlarmAlert: newState.isAlarmAlert });
+    }
 
-	/*
-	 * Triggers the item editing mode.
-	 */
-	Controller.prototype.editItem = function (id) {
-		var self = this;
-		self.model.read(id, function (data) {
-			self.view.render('editItem', {id: id, title: data[0].title});
-		});
-	};
+    if (newState.isSetAlarm !== state.isSetAlarm) {
+      state.isSetAlarm = newState.isSetAlarm;
+      self.view.render('setIsSetAlarm', { isSetAlarm: newState.isSetAlarm });
+    }
 
-	/*
-	 * Finishes the item editing mode successfully.
-	 */
-	Controller.prototype.editItemSave = function (id, title) {
-		var self = this;
-		title = title.trim();
+    if (newState.isAlarmOn !== state.isAlarmOn) {
+      state.isAlarmOn = newState.isAlarmOn;
+      self.view.render('setIsAlarmOn', { isAlarmOn: newState.isAlarmOn });
+    }
+  };
 
-		if (title.length !== 0) {
-			self.model.update(id, {title: title}, function () {
-				self.view.render('editItemDone', {id: id, title: title});
-			});
-		} else {
-			self.removeItem(id);
-		}
-	};
+  Controller.prototype.incrementTime = function() {
+    const self = this;
 
-	/*
-	 * Cancels the item editing mode.
-	 */
-	Controller.prototype.editItemCancel = function (id) {
-		var self = this;
-		self.model.read(id, function (data) {
-			self.view.render('editItemDone', {id: id, title: data[0].title});
-		});
-	};
+    self.model.incrementTime();
+    self.render();
+  };
 
-	/**
-	 * By giving it an ID it'll find the DOM element matching that ID,
-	 * remove it from the DOM and also remove it from storage.
-	 *
-	 * @param {number} id The ID of the item to remove from the DOM and
-	 * storage
-	 */
-	Controller.prototype.removeItem = function (id) {
-		var self = this;
-		self.model.remove(id, function () {
-			self.view.render('removeItem', id);
-		});
+  Controller.prototype.decrementTime = function() {
+    const self = this;
 
-		self._filter();
-	};
+    self.model.decrementTime();
+    self.render();
+  };
 
-	/**
-	 * Will remove all completed items from the DOM and storage.
-	 */
-	Controller.prototype.removeCompletedItems = function () {
-		var self = this;
-		self.model.read({ completed: true }, function (data) {
-			data.forEach(function (item) {
-				self.removeItem(item.id);
-			});
-		});
+  Controller.prototype.setAlarm = function() {
+    const self = this;
 
-		self._filter();
-	};
+    self.model.setAlarm();
+    self.render();
+  };
 
-	/**
-	 * Give it an ID of a model and a checkbox and it will update the item
-	 * in storage based on the checkbox's state.
-	 *
-	 * @param {number} id The ID of the element to complete or uncomplete
-	 * @param {object} checkbox The checkbox to check the state of complete
-	 *                          or not
-	 * @param {boolean|undefined} silent Prevent re-filtering the todo items
-	 */
-	Controller.prototype.toggleComplete = function (id, completed, silent) {
-		var self = this;
-		self.model.update(id, { completed: completed }, function () {
-			self.view.render('elementComplete', {
-				id: id,
-				completed: completed
-			});
-		});
+  Controller.prototype.toggleAlarm = function() {
+    const self = this;
 
-		if (!silent) {
-			self._filter();
-		}
-	};
+    // if alarm is currently on (which means we're turing it off)
+    // and snoozeFunc exists then we want to clear it out
+    if (self.state.isAlarmOn && self.snoozeFunc) {
+      clearTimeout(self.snoozeFunc);
+    }
 
-	/**
-	 * Will toggle ALL checkboxes' on/off state and completeness of models.
-	 * Just pass in the event object.
-	 */
-	Controller.prototype.toggleAll = function (completed) {
-		var self = this;
-		self.model.read({ completed: !completed }, function (data) {
-			data.forEach(function (item) {
-				self.toggleComplete(item.id, completed, true);
-			});
-		});
+    self.model.toggleAlarm();
+    self.render();
+  };
 
-		self._filter();
-	};
+  Controller.prototype.snoozeAlarm = function() {
+    const self = this;
 
-	/**
-	 * Updates the pieces of the page which change depending on the remaining
-	 * number of todos.
-	 */
-	Controller.prototype._updateCount = function () {
-		var self = this;
-		self.model.getCount(function (todos) {
-			self.view.render('updateElementCount', todos.active);
-			self.view.render('clearCompletedButton', {
-				completed: todos.completed,
-				visible: todos.completed > 0
-			});
+    // only snooze if alarm is alerting
+    if (self.state.isAlarmAlert) {
+      self.model.setAlarmAlert(false);
+      self.render();
 
-			self.view.render('toggleAll', {checked: todos.completed === todos.total});
-			self.view.render('contentBlockVisibility', {visible: todos.total > 0});
-		});
-	};
+      self.snoozeFunc = setTimeout(() => {
+        self.model.setAlarmAlert(true)
+        self.render();
+      }, SNOOZE_TIME_MINUTES * 60 * 1000);
+    }
+  };
 
-	/**
-	 * Re-filters the todo items, based on the active route.
-	 * @param {boolean|undefined} force  forces a re-painting of todo items.
-	 */
-	Controller.prototype._filter = function (force) {
-		var activeRoute = this._activeRoute.charAt(0).toUpperCase() + this._activeRoute.substr(1);
-
-		// Update the elements on the page, which change with each completed todo
-		this._updateCount();
-
-		// If the last active route isn't "All", or we're switching routes, we
-		// re-create the todo item elements, calling:
-		//   this.show[All|Active|Completed]();
-		if (force || this._lastActiveRoute !== 'All' || this._lastActiveRoute !== activeRoute) {
-			this['show' + activeRoute]();
-		}
-
-		this._lastActiveRoute = activeRoute;
-	};
-
-	/**
-	 * Simply updates the filter nav's selected states
-	 */
-	Controller.prototype._updateFilterState = function (currentPage) {
-		// Store a reference to the active route, allowing us to re-filter todo
-		// items as they are marked complete or incomplete.
-		this._activeRoute = currentPage;
-
-		if (currentPage === '') {
-			this._activeRoute = 'All';
-		}
-
-		this._filter();
-
-		this.view.render('setFilter', currentPage);
-	};
-
-	// Export to window
-	window.app = window.app || {};
-	window.app.Controller = Controller;
+  window.app = window.app || {};
+  window.app.Controller = Controller;
 })(window);

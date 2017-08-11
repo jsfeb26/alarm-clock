@@ -1,112 +1,121 @@
 (function (window) {
   'use strict';
 
+  const AM = 'am';
+  const PM = 'pm';
+  const ALARM_TYPE = 'alarm';
+  const TIME_TYPE = 'time';
+
   function Store() {
-    const localStorage = {
+    this.localStorage = {
       timeHour: 12,
       timeMinute: 0,
-      timeAfternoon: false,
-      mode: 'NONE',
-      larmOn: false,
-      larmTimeHour: 12,
-      larmTimeMinute: 0,
-      alarmTimeAfternoon: false,
-      snooze: false
+      timePeriod: AM,
+      alarmHour: 12,
+      alarmMinute: 0,
+      alarmPeriod: AM,
+      isAlarmAlert: false,
+      isSetAlarm: false,
+      isAlarmOn: false,
+      isSnoozed: false // store this as 10 when it's zero it's off
     };
-  }
+  };
 
-  Store.prototype.incrementTime = function () {
-    localStorage.timeMinute++;
+  Store.prototype.getState = function() {
+    const type = this.localStorage.isSetAlarm ? 'alarm' : 'time';
 
-    if (timeMinute === 60) {
-      localStorage.timeMinute = 0;
-      localStorage.timeHour++;
+    const minuteValue = this.localStorage[`${type}Minute`];
+    const minuteDisplay = minuteValue < 10 ? `0${minuteValue}` : minuteValue;
+
+    return {
+      time: `${this.localStorage[`${type}Hour`]}:${minuteDisplay}`,
+      period: this.localStorage[`${type}Period`],
+      isAlarmAlert: this.localStorage.isAlarmAlert,
+      isSetAlarm: this.localStorage.isSetAlarm,
+      isAlarmOn: this.localStorage.isAlarmOn
+    };
+  };
+
+  Store.prototype.updateAlarmAlertStatus = function() {
+    const _store = this.localStorage;
+
+    if (
+      _store.timeHour === _store.alarmHour &&
+      _store.timeMinute === _store.alarmMinute &&
+      _store.timePeriod === _store.alarmPeriod &&
+      _store.isAlarmOn
+    ) {
+      _store.isAlarmAlert = true;
+    }
+  };
+
+  Store.prototype.incrementTime = function(type) {
+    const _store = this.localStorage;
+
+    if (!type) {
+      type = _store.isSetAlarm ? 'alarm' : 'time';
     }
 
-    if (localStorage.timeHour === 13) {
-      localStorage.timeHour = 1;
-      localStorage.timeAfternoon = !localStorage.timeAfternoon;
-    }
-	};
+    _store[`${type}Minute`]++;
 
-	// /**
-	//  * Will retrieve all data from the collection
-	//  *
-	//  * @param {function} callback The callback to fire upon retrieving data
-	//  */
-	// Store.prototype.findAll = function (callback) {
-	// 	callback = callback || function () {};
-	// 	callback.call(this, JSON.parse(localStorage[this._dbName]).todos);
-	// };
-  //
-	// /**
-	//  * Will save the given data to the DB. If no item exists it will create a new
-	//  * item, otherwise it'll simply update an existing item's properties
-	//  *
-	//  * @param {object} updateData The data to save back into the DB
-	//  * @param {function} callback The callback to fire after saving
-	//  * @param {number} id An optional param to enter an ID of an item to update
-	//  */
-	// Store.prototype.save = function (updateData, callback, id) {
-	// 	var data = JSON.parse(localStorage[this._dbName]);
-	// 	var todos = data.todos;
-  //
-	// 	callback = callback || function () {};
-  //
-	// 	// If an ID was actually given, find the item and update each property
-	// 	if (id) {
-	// 		for (var i = 0; i < todos.length; i++) {
-	// 			if (todos[i].id === id) {
-	// 				for (var key in updateData) {
-	// 					todos[i][key] = updateData[key];
-	// 				}
-	// 				break;
-	// 			}
-	// 		}
-  //
-	// 		localStorage[this._dbName] = JSON.stringify(data);
-	// 		callback.call(this, todos);
-	// 	} else {
-	// 		// Generate an ID
-	// 		updateData.id = new Date().getTime();
-  //
-	// 		todos.push(updateData);
-	// 		localStorage[this._dbName] = JSON.stringify(data);
-	// 		callback.call(this, [updateData]);
-	// 	}
-	// };
-  //
-	// /**
-	//  * Will remove an item from the Store based on its ID
-	//  *
-	//  * @param {number} id The ID of the item you want to remove
-	//  * @param {function} callback The callback to fire after saving
-	//  */
-	// Store.prototype.remove = function (id, callback) {
-	// 	var data = JSON.parse(localStorage[this._dbName]);
-	// 	var todos = data.todos;
-  //
-	// 	for (var i = 0; i < todos.length; i++) {
-	// 		if (todos[i].id == id) {
-	// 			todos.splice(i, 1);
-	// 			break;
-	// 		}
-	// 	}
-  //
-	// 	localStorage[this._dbName] = JSON.stringify(data);
-	// 	callback.call(this, todos);
-	// };
-  //
-	// /**
-	//  * Will drop all storage and start fresh
-	//  *
-	//  * @param {function} callback The callback to fire after dropping the data
-	//  */
-	// Store.prototype.drop = function (callback) {
-	// 	var data = {todos: []};
-	// 	localStorage[this._dbName] = JSON.stringify(data);
-	// 	callback.call(this, data.todos);
-	// };
+    if (_store[`${type}Minute`] === 60) {
+      _store[`${type}Minute`] = 0;
+      _store[`${type}Hour`]++;
+    }
+
+    if (_store[`${type}Hour`] === 12 && _store[`${type}Minute`] === 0) {
+      _store[`${type}Period`] = _store[`${type}Period`] === AM ? PM : AM;
+    }
+
+    if (_store[`${type}Hour`] === 13) {
+      _store[`${type}Hour`] = 1;
+    }
+
+    this.updateAlarmAlertStatus();
+  };
+
+  Store.prototype.decrementTime = function(type) {
+    const _store = this.localStorage;
+
+    if (!type) {
+      type = _store.isSetAlarm ? 'alarm' : 'time';
+    }
+
+    _store[`${type}Minute`]--;
+
+    if (_store[`${type}Minute`] === -1) {
+      _store[`${type}Minute`] = 59;
+      _store[`${type}Hour`]--;
+    }
+
+    if (_store[`${type}Hour`] === 0 || (_store[`${type}Hour`] === 11 && _store[`${type}Minute`] === 59)) {
+      _store[`${type}Period`] = _store[`${type}Period`] === AM ? PM : AM;
+    }
+
+    if (_store[`${type}Hour`] === 0) {
+      _store[`${type}Hour`] = 12;
+    }
+
+    this.updateAlarmAlertStatus();
+  };
+
+  Store.prototype.setAlarm = function() {
+    this.localStorage.isSetAlarm = !this.localStorage.isSetAlarm;
+  };
+
+  Store.prototype.toggleAlarm = function() {
+    this.localStorage.isAlarmOn = !this.localStorage.isAlarmOn;
+
+    if (!this.localStorage.isAlarmOn) {
+      // we turning off alarm then reset alarm alert and snooze
+      this.localStorage.isAlarmAlert = false;
+      this.localStorage.isSnoozed = false;
+    }
+  };
+
+  Store.prototype.setAlarmAlert = function(isAlert) {
+    this.localStorage.isAlarmAlert = isAlert;
+  };
 
   window.app = window.app || {};
   window.app.Store = Store;

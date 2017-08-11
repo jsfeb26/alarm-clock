@@ -7,32 +7,34 @@
   </head>
   <body>
     <div class="alarm-wrapper">
-      <div class="snooze">
-        
-      </div>
-      <div class="time-display">
-        <div class="am-pm"></div>
-        <div class="time"></div>
-      </div>
-      <div class="alarm-buttons">
-        <div class="input-type-toggle">
-
+      <div class="alarm-body">
+        <div class="alarm-buttons">
+          <div class="snooze btn">Snooze</div>
         </div>
-        <div class="increment-time">
-
+        <div class="time-display-wrapper">
+          <div class="time-display">
+            <div class="time"></div>
+            <div class="period"></div>
+          </div>
         </div>
-        <div class="decrement-time">
-
-        </div>
-        <div class="alarm-toggle">
-
+        <div class="alarm-buttons">
+          <div class="decrement-time btn">-</div>
+          <div class="increment-time btn">+</div>
+          <div class="set-alarm btn">Set</div>
+          <div class="alarm-toggle">
+            Off
+            <label class="switch">
+              <input type="checkbox">
+              <span class="slider round"></span>
+            </label>
+            On
+          </div>
         </div>
       </div>
     </div>
   <script src="js/helpers.js"></script>
   <script src="js/store.js"></script>
   <script src="js/model.js"></script>
-  <script src="js/template.js"></script>
   <script src="js/view.js"></script>
   <script src="js/controller.js"></script>
   <script src="js/app.js"></script>
